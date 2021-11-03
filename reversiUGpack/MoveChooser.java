@@ -24,37 +24,63 @@ public class MoveChooser {
 	        return null;
 		}
 
-		return minimax_ab(boardState, searchDepth, 2147483647, -2147483648);
+		return minimax(boardState, searchDepth);
     }
 	
+    public static Move minimax(BoardState bs, int sd) {
+        ArrayList<Move> moveList = bs.getLegalMoves();
+        int numMoves = moveList.size();
+        Move bestMove = null;
+        if (numMoves == 0) {
+            return null;
+        }
+        else {
+            bestMove = moveList.get(0);
+            BoardState bestBoard = bs.deepCopy();
+            bestBoard.makeLegalMove(bestMove.x, bestMove.y);
+            int bestEval = boardVal(bestBoard);
+            for (int i = 1; i < numMoves; i++) {
+                Move currentMove = bs.getLegalMoves().get(i);
+                BoardState currentState = bs.deepCopy();
+                currentState.makeLegalMove(currentMove.x, currentMove.y);
+                if (bestEval < minimax_val(currentState, sd, -2147483648, 2147483647)) {
+                    bestMove = currentMove;                }
+            }
+        }
+        return bestMove;
 
-	public static Move minimax_ab(BoardState bs, int sd, int a, int b)
+    }
+	public static int minimax_val(BoardState bs, int sd, int a, int b)
     {
-    	if (sd == 0)
+        if (sd == 0)
     	{
-    		return bs.getLegalMoves().get(0);
+    		return boardVal(bs);
     	}
-    	else if (bs.colour == -1) {
-    		a = -2147483648;
-    		int nodeNum = 0;
-    		while (b < a && !bs.getLegalMoves().isEmpty()) {
-    			BoardState bc = bs.deepCopy();
-    			bc.makeLegalMove(bc.getLegalMoves().get(nodeNum).x, bc.getLegalMoves().get(nodeNum).y);
-    			nodeNum++;
-    			a = Math.max(a, boardVal(minimax_ab(bc, sd-1, a, b)));
-    		}
-    	}
+        else if (bs.colour == -1) {
+            a = -2147483648;
+            int nodeNum = 0;
+            while ((b>a) && ( nodeNum < bs.getLegalMoves().size() )){
+                Move nextEdge = bs.getLegalMoves().get(nodeNum);
+                nodeNum++;
+                BoardState nextNode = bs.deepCopy();
+                nextNode.makeLegalMove(nextEdge.x, nextEdge.y);
+                a = Math.max(a, minimax_val(nextNode, sd-1, a, b));
+            }
+            return a;
+        }
     	else {
     		b = 2147483647;
     		int nodeNum = 0;
-    		while (b < a && !bs.getLegalMoves().isEmpty()) {
-    			BoardState bc = bs.deepCopy();
-    			bc.makeLegalMove(bc.getLegalMoves().get(nodeNum).x, bc.getLegalMoves().get(nodeNum).y);
-    			nodeNum++;
-    			b = Math.min(b, boardVal(minimax_ab(bc, sd-1, a, b)));
+    		while ( (b<a) && (nodeNum < bs.getLegalMoves().size()) ) {
+    			Move nextEdge = bs.getLegalMoves().get(nodeNum);
+                nodeNum++;
+                BoardState nextNode = bs.deepCopy();
+                nextNode.makeLegalMove(nextEdge.x, nextEdge.y);
+    			b = Math.min(b, minimax_val(nextNode, sd-1, a, b));
     		}
+            return b;
     	}
-    	return null;
+    	
     }
 
     public static int boardVal(BoardState bs) {
