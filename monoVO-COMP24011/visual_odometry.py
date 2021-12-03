@@ -26,17 +26,49 @@ def featureMatching(image_ref, image_cur, matching_algorithm, threshold_value, o
     detector = cv2.xfeatures2d.SIFT_create(nfeatures=kMinNumFeature)
 
     #LAB 4: put your feature matching code after this line
+    kp1, des1 = detector.detectAndCompute(image_cur,None)
+    kp2, des2 = detector.detectAndCompute(image_ref,None)
+
+    if matching_algorithm == 1:
+        matcher = cv2.BFMatcher(cv2.NORM_L2, crossCheck = True)
+        matches = matcher.match(des1, des2)
+
+        matchesInThresh = []
+        for match in matches:
+            if match.distance < threshold_value:
+                matchesInThresh.append(match)
+        matches = matchesInThresh
+
+    elif matching_algorithm == 2:
+        matcher = cv2.BFMatcher(cv2.NORM_L2, crossCheck = True)
+        matches = matcher.knnMatch(des1, des2, k=1)
+        tupleList = list(map(list, matches))
+        matchesList = []
+        for match in tupleList:
+            if match != []:
+                matchesList.append(match[0])
+        matches = matchesList
+
+    elif matching_algorithm == 3:
+        matcher = cv2.BFMatcher(cv2.NORM_L2, crossCheck = False)
+        matches = matcher.knnMatch(des1, des2, k=2)
+        threshMatches = []
+        for m1,m2 in matches:
+            if m1.distance < .75*m2.distance:
+                threshMatches.append(m1)
+
+        matches = threshMatches
 
     #The following line will write the distance values of feature matches to an output file
     #Change the 1st parameter to the variable holding the feature matches obtained by your implementation
-    printMatchesToFile(None, output_path)
+    printMatchesToFile(matches, output_path)
 
     #The following lines will display the two images side by side. Make sure that you change the 2nd, 4th and 5th parameters
     #The 2nd parameter should be the keypoints detected in the previous image
     #The 4th parameter should be the keypoints detected in the current image
     #The 5th parameter should be the matches
     #NOTE: Depending on which BFMatcher function you are using for feature matching, you might want to consider calling drawMatchesKnn instead
-    img3 = cv2.drawMatches(image_ref, None, image_cur, None, None, None, flags=2)
+    img3 = cv2.drawMatches(image_cur, kp1, image_ref, kp2, matches[:60], None, flags=2)
     fig = plt.figure()
     fig.set_size_inches(10,3)
     plt.imshow(img3)
@@ -45,6 +77,16 @@ def featureMatching(image_ref, image_cur, matching_algorithm, threshold_value, o
 def printMatchesToFile(matches, output_path):
     #Write your code for generating the output file following the required format
     output_file = open(output_path, 'w')
+    matches = sorted(matches, key=lambda x:x.queryIdx)
+
+    for i in range(matches[-1].queryIdx):
+        string = str(i)+": "
+        nextMatch = next((x for x in matches if x.queryIdx == i), None)
+        if nextMatch != None:
+            string += str(round(nextMatch.distance,2))
+        string += "\n"
+        output_file.write(string)
+
     output_file.close()
 
 class PinholeCamera:
