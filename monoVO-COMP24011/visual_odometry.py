@@ -36,18 +36,27 @@ def featureMatching(image_ref, image_cur, matching_algorithm, threshold_value, o
         matchesInThresh = []
         for match in matches:
             if match.distance < threshold_value:
-                matchesInThresh.append(match)
+                matchesInThresh.append([match])
         matches = matchesInThresh
 
     elif matching_algorithm == 2:
-        matcher = cv2.BFMatcher(cv2.NORM_L2, crossCheck = True)
-        matches = matcher.knnMatch(des1, des2, k=1)
-        tupleList = list(map(list, matches))
+        matcher = cv2.BFMatcher(cv2.NORM_L2, crossCheck = False)
+        matches = matcher.knnMatch(des1, des2, k=3)
+        tupleList = [list(item) for item in matches]
+        
         matchesList = []
         for match in tupleList:
+            tList = []
+            for submatch in match:
+                if submatch.distance < threshold_value:
+                    tList.append(submatch)
+            matchesList.append(tList)
+        tList = []
+        for match in matchesList:
             if match != []:
-                matchesList.append(match[0])
-        matches = matchesList
+                tList.append(match)
+
+        matches = tList
 
     elif matching_algorithm == 3:
         matcher = cv2.BFMatcher(cv2.NORM_L2, crossCheck = False)
@@ -55,7 +64,7 @@ def featureMatching(image_ref, image_cur, matching_algorithm, threshold_value, o
         threshMatches = []
         for m1,m2 in matches:
             if m1.distance < .75*m2.distance:
-                threshMatches.append(m1)
+                threshMatches.append([m1])
 
         matches = threshMatches
 
@@ -68,7 +77,7 @@ def featureMatching(image_ref, image_cur, matching_algorithm, threshold_value, o
     #The 4th parameter should be the keypoints detected in the current image
     #The 5th parameter should be the matches
     #NOTE: Depending on which BFMatcher function you are using for feature matching, you might want to consider calling drawMatchesKnn instead
-    img3 = cv2.drawMatches(image_cur, kp1, image_ref, kp2, matches[:60], None, flags=2)
+    img3 = cv2.drawMatches(image_cur, kp1, image_ref, kp2, [item[0] for item in matches][:20], None, flags=2)
     fig = plt.figure()
     fig.set_size_inches(10,3)
     plt.imshow(img3)
@@ -77,14 +86,15 @@ def featureMatching(image_ref, image_cur, matching_algorithm, threshold_value, o
 def printMatchesToFile(matches, output_path):
     #Write your code for generating the output file following the required format
     output_file = open(output_path, 'w')
-    matches = sorted(matches, key=lambda x:x.queryIdx)
-
-    for i in range(matches[-1].queryIdx):
-        string = str(i)+": "
-        nextMatch = next((x for x in matches if x.queryIdx == i), None)
+    matches = sorted(matches, key=lambda x:x[0].queryIdx)
+    for i in range(matches[-1][0].queryIdx):
+        string = str(i)+":"
+        nextMatch = next((x for x in matches if x[0].queryIdx == i), None)
         if nextMatch != None:
-            string += str(round(nextMatch.distance,2))
+            for j in range(len(nextMatch)):
+                string += " " + "{:.2f}".format(nextMatch[j].distance)
         string += "\n"
+
         output_file.write(string)
 
     output_file.close()

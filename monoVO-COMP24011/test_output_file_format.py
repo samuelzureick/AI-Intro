@@ -8,8 +8,7 @@ for line in lines:
     line_matched = re.match(r"^[0-9]+:(\s[0-9]+.[0-9]{2})*$\n", line)
     format_followed = bool(line_matched)
     if format_followed == False:
-        break;
-
+        print(line)
 if format_followed:
     print("File conforms with required format.")
 else:
